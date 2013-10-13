@@ -2,15 +2,20 @@
 . ../common.sh
 
 if [ -s $gwiptbl ] || [ "$(cat /tmp/boot_runs_$interface)" -ge 5 ]; then
-	if test_connectivity internet; then
-		logger -t fsm "Interface $interface: Node is online"
-		echo queen
-	elif cloud_is_online; then
-		logger -t fsm "Interface $interface: Cloud is online"
+	if [ "$(get_forcestate)" == "drone" ]; then
+		logger -t fsm "Interface $interface: Forced into drone state by configuration"
 		echo drone
 	else
-		logger -t fsm "Interface $interface: Cloud is offline"
-		echo robinson
+		if test_connectivity internet; then
+			logger -t fsm "Interface $interface: Node is online"
+			echo queen
+		elif cloud_is_online; then
+			logger -t fsm "Interface $interface: Cloud is online"
+			echo drone
+		else
+			logger -t fsm "Interface $interface: Cloud is offline"
+			echo robinson
+		fi
 	fi
 else
 	boot_runs="$(cat /tmp/boot_runs_$interface)"
