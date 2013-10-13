@@ -25,6 +25,11 @@ get_iface () {
 	echo $iface
 }
 
+get_forcestate() {
+	local force_state=$(uci -q get network.$interface.force_state)
+	echo $force_state
+}
+
 cloud_is_online () {
     # look for mac addrs in batman gateway list
 	batctl -m $(uci get network.$interface.batman_iface) gwl | tail -n-1 | egrep -q '([0-9a-f]{2}:){5}[0-9a-f]{2}'

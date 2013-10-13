@@ -1,0 +1,18 @@
+#!/bin/sh -e
+. ../common.sh
+
+if [ "$(get_forcestate)" == "drone" ]; then
+	logger -t fsm "Interface $interface: Forced into drone state by configuration"
+	echo drone
+else
+	if test_connectivity internet; then
+		logger -t fsm "Interface $interface: Node is online"
+		echo queen
+	elif cloud_is_online; then
+		logger -t fsm "Interface $interface: Cloud is online"
+		echo drone
+	else
+		logger -t fsm "Interface $interface: Cloud is offline"
+		echo robinson
+	fi
+fi
