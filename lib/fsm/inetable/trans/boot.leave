@@ -2,6 +2,10 @@
 logger -t fsm boot.leave
 . ../common.sh
 
+queenrange=$(uci -q get network.$interface.net_queenrange)
+queenrange_start=$(echo $queenrange | cut -f1 -d' ')
+queenrange_end=$(echo $queenrange | cut -f2 -d' ')
+
 # init gwid table by merging it with a hand-crafted table in which all
 # available IPs are stored as free with version zero. This guarantees
 # that any update on any node will have a higher version.
@@ -9,7 +13,7 @@ logger -t fsm boot.leave
 # table version received in the boot cycle.
 # Note: This is only the case if the gwip table is empty!
 if [ ! -s $gwiptbl ]; then
-	for i in $(seq 0 254); do
+	for i in $(seq $queenrange_start $queenrange_end); do
 		echo -e "$i\t0\tfree"
 	done > /tmp/gwip_init_$interface
 	p2ptbl merge $gwiptbl /tmp/gwip_init_$interface

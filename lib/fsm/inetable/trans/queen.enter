@@ -2,6 +2,13 @@
 logger -t fsm queen.enter
 . ../common.sh
 
+queenrange=$(uci -q get network.$interface.net_queenrange)
+queenrange_start=$(echo $queenrange | cut -f1 -d' ')
+queenrange_end=$(echo $queenrange | cut -f2 -d' ')
+
+[ -n "$queenrange_start" ] 
+[ -n "$queenrange_end" ] 
+
 ## setup gateway IPv4
 # determine gw IP from p2ptable
 getoct () {
@@ -12,6 +19,7 @@ getoct () {
 			p2ptbl show $gwiptbl \
 			| cut -f1,2 \
 			| egrep "[0-9]*"$'\t'"$1" \
+			| awk -v Frst=$queenrange_start -v Last=$queenrange_end ' $1 >= Frst && $1 <= Last ' \
 			| $2 \
 			| head -n1 \
 			| cut -f1
@@ -20,6 +28,7 @@ getoct () {
 			p2ptbl show $gwiptbl \
 			| grep "$NodeId" \
 			| cut -f1,2 \
+			| awk -v Frst=$queenrange_start -v Last=$queenrange_end ' $1 >= Frst && $1 <= Last ' \
 			| $2 \
 			| head -n1 \
 			| cut -f1
