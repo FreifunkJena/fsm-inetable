@@ -1,12 +1,14 @@
 #!/bin/sh -e
 . ../common.sh
+. ../common-watcher.sh
+
 #Check if our current Oct3 is valid
 CurrentOct3=$(current_oct3)
 [ -n "$CurrentOct3" ]
 
 # if our GW IP has been taken we must no use it again
 if ! we_own_our_ip; then
-	logger -t fsm "Interface $interface: We dont own our IP! Changing ..."
+	logmessage "We dont own our IP!"
     if ! cloud_is_online; then
 	echo robinson
     else
@@ -16,8 +18,8 @@ if ! we_own_our_ip; then
 fi
 
 if test_connectivity internet; then
-	logger -t fsm "Interface $interface: Node is online"
-    echo queen
+	logmessage "Internet connection available, checking queen mode"
+	return_queenmode
     exit
 fi
 
@@ -27,12 +29,12 @@ else
     GhostTime=0
 fi
 if ! cloud_is_online; then
-	logger -t fsm "Interface $interface: Cloud is offline"
+	logmessage "No gateways found -> Robinson State"
     echo robinson
 elif [ $GhostTime -ge $DHCPLeaseTime ]; then
-	logger -t fsm "Interface $interface: Cloud is online"
+	logmessage "Ghost Time exceeded DHCP Lease Time & cloud has gateways -> Drone State"
     echo drone
 else
-	logger -t fsm "Interface $interface: Cloud is online"
+	logmessage "Ghost Time below DHCP Lease Time & cloud has gateways -> Ghost State"
     echo ghost
 fi

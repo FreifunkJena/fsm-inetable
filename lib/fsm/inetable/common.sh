@@ -5,8 +5,15 @@ interface=$3
 [ -n $interface ] 
 
 gwiptbl=/var/p2ptbl/$interface/gwip
+logfile=/tmp/fsmlogfile-$interface
 DHCPLeaseTime="1h"
 NodeId="$(cat /etc/nodeid)"
+
+logmessage() {
+	local timestamp=$(date +"%Y-%m-%d %H:%M:%S")
+	logger -t fsm-inetable "[$interface]: $1"
+	echo "$timestamp - fsm-inetable [$interface]: $1" 1>> "$logfile"
+}
 
 we_own_our_ip () {
 	local CurrentOct3=$(current_oct3)
@@ -19,20 +26,20 @@ current_oct3 () {
 }
 
 get_iface () {
-	local iface=$(uci get network.$interface.ifname)
+	local iface=$(uci -q get network.$interface.ifname)
 	local type=$(uci -q get network.$interface.type)
 	[ "bridge" = "$type" ] && iface="br-$interface"
 	echo $iface
 }
 
 get_forcestate() {
-	local force_state=$(uci -q get network.$interface.force_state)
+	local force_state=$(uci -q get fsm.$interface.force_state)
 	echo $force_state
 }
 
 cloud_is_online () {
     # look for mac addrs in batman gateway list
-	batctl -m $(uci get network.$interface.batman_iface) gwl | tail -n-1 | egrep -q '([0-9a-f]{2}:){5}[0-9a-f]{2}'
+	batctl -m $(uci -q get fsm.$interface.batman_iface) gwl | tail -n-1 | egrep -q '([0-9a-f]{2}:){5}[0-9a-f]{2}'
 }
 
 generate_ip6addr() {
@@ -45,7 +52,7 @@ generate_ip6addr() {
 		# Afterwards add the Network from the cloud configuration file and put a "/64" as netmask at the end
 		local ByteSix=$(echo $MacAddr | awk '{print $1}')
 		local XORByteSix=$(let "RESULT=0x$ByteSix ^ 0x02" ; printf '%x\n' $RESULT)
-		local net_ip6ula=$(uci get network.$interface.net_ip6ula)
+		local net_ip6ula=$(uci -q get fsm.$interface.net_ip6ula)
 		local IP6NetworkAddr=$(echo $net_ip6ula | egrep -o 'f[c-d][:0-9a-f]*' | sed -e 's/:$//')
 		local IP6HostAddr="$XORByteSix""$(echo $MacAddr | awk '{print $2":"$3}')""FF:FE""$(echo $MacAddr | awk '{print $4":"$5$6}')"
 		local IP6Addr="$IP6NetworkAddr$IP6HostAddr"
@@ -59,7 +66,7 @@ mesh_add_ipv4 () {
 	local ip6netmask="64"
 	local ipaddr=$1
 	local netmask=$2
-	logger -t fsm "Interface: $interface, Action: Set IPv4 $ipaddr/$netmask"
+	logmessage "Action: Set IPv4 $ipaddr/$netmask"
 	call_changescript configure $ip6addr $ip6netmask $ipaddr $netmask
 }
 
@@ -72,7 +79,7 @@ mesh_add_ipv6 () {
 	#Function will always take its IP from the generated functions rather that as function parameters!
 	local ip6addr=$(generate_ip6addr)
 	local ip6netmask="64"
-	logger -t fsm "Interface: $interface, Action: Set IPv6 $ip6addr/$ip6netmask"
+	logmessage "Action: Set IPv6 $ip6addr/$ip6netmask"
 	call_changescript configure $ip6addr $ip6netmask
 }
 call_changescript () { 
@@ -83,7 +90,7 @@ call_changescript () {
     echo "/lib/netifd/fsm.script" | (
 		exec 2>/tmp/fsm.script.log-"$interface"
 		set -x
-		logger -t debug "$ip6addr $ip6netmask $ipaddr $netmask $INTERFACE"
+		logmessage "Calling IP change script with parameters: $ip6addr $ip6netmask $ipaddr $netmask"
 		while read cmd; do
 			if [ -x "$cmd" ]; then
 				$cmd $1 $interface $ip6addr $ip6netmask $ipaddr $netmask  666<&-
@@ -97,13 +104,25 @@ mesh_set_dhcp() {
 	local start_ip=$1
 	local end_ip=$2
 	local netmask=$3
+	local gateway=$4
+	local dns=$5
+
+	local iface=$(get_iface)
 	# Remove old DHCP settings
 	sed \
     -e "/$interface settings/d" \
     -i "/tmp/dnsmasq.conf"
 	# Write new settings
-	echo "dhcp-range=$(get_iface),$start_ip,$end_ip,$netmask,$DHCPLeaseTime # $interface settings" \
+	echo "dhcp-range=$iface,$start_ip,$end_ip,$netmask,$DHCPLeaseTime # $interface settings" \
 		>> "/tmp/dnsmasq.conf"
+	if [ -n "$gateway" ]; then
+		echo "dhcp-option=$iface,3,$gateway # $interface settings" \
+		>> "/tmp/dnsmasq.conf"
+	fi
+	if [ -n "$dns" ]; then
+		echo "dhcp-option=$iface,6,$dns # $interface settings" \
+		>> "/tmp/dnsmasq.conf"
+	fi
 }
 
 mesh_set_dhcp_fake() {
