@@ -1,0 +1,3 @@
+#!/bin/sh -e
+# We just use the drone state script here for now ;)
+. ./drone.enter

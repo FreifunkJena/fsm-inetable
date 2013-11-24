@@ -1,0 +1,3 @@
+#!/bin/sh -e
+# We use the queen scripts for now until the fsm controls the vpn interface
+. ./queen-ghost.trans
