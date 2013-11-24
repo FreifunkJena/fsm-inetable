@@ -8,7 +8,7 @@ if [ "$(get_forcestate)" == "drone" ]; then
 else
 	if test_connectivity $interface internet; then
 		logmessage "Internet connection available, checking queen mode"
-		return_queenmode
+		return_queenstate
 	elif cloud_is_online; then
 		logmessage "Connection test failed & cloud has gateways -> Drone State"
 		echo drone
