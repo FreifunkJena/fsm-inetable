@@ -2,22 +2,12 @@
 . ../common.sh
 . ../common-watch.sh
 
-if [ -s $gwiptbl ] || [ "$(cat /tmp/boot_runs_$interface)" -ge 5 ]; then
-	if [ "$(get_forcestate)" == "drone" ]; then
-		logmessage "Forced into Drone State by configuration"
-		echo drone
-	else
-		if test_connectivity $interface internet; then
-			logmessage "Internet connection available, checking queen mode"
-			return_queenmode
-		elif cloud_is_online; then
-			logmessage "Connection test failed & cloud has gateways -> Drone State"
-			echo drone
-		else
-			logmessage "Connection test failed & no gateways found -> Robinson State"
-			echo robinson
-		fi
-	fi
+if [ "$(get_forcestate)" == "drone" ]; then
+	logmessage "Forced into Drone State by configuration"
+	echo drone
+elif [ -s $gwiptbl ] || [ "$(cat /tmp/boot_runs_$interface)" -ge 5 ]; then
+	logmessage "Entering connection testing mode"
+	echo testing
 else
 	boot_runs="$(cat /tmp/boot_runs_$interface)"
 	boot_runs_new=`expr $boot_runs + 1`
