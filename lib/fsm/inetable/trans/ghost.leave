@@ -1,5 +1,7 @@
 #!/bin/sh -e
-logger -t fsm ghost.leave
-rm /tmp/ghost_since_$3
+. ../common.sh
+logmessage "Running script: $0"
 
-./queen.leave "$1" "$2" "$3"
+rm /tmp/ghost_since_$interface
+
+./queen.leave $SO $SN $interface
