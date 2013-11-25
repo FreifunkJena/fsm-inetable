@@ -1,6 +1,6 @@
 #!/bin/sh -e
-logger -t fsm robinson.leave
 . ../common.sh
+logmessage "Running script: $0"
 
 #Remove IPv4 Addr
 mesh_del_ipv4
@@ -11,8 +11,8 @@ mesh_remove_dhcp
 
 
 # stop redirecting all inet traffic to local httpd/nameserver
-iptables -t nat -F prerouting_robinson_inet
+iptables -t nat -F prerouting_robinson_inet_$interface
 
 # TODO: now that we have internet, send all packets destined to the
 # fake net to the intended inet host; for now reject them
-iptables -t nat -F prerouting_robinson_fake
+iptables -t nat -F prerouting_robinson_fake_$interface

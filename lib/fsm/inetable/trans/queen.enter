@@ -1,82 +1,38 @@
 #!/bin/sh -e
-logger -t fsm queen.enter
 . ../common.sh
+. ../common-queen.sh
+logmessage "Running script: $0"
 
-queenrange=$(uci -q get network.$interface.net_queenrange)
-queenrange_start=$(echo $queenrange | cut -f1 -d' ')
-queenrange_end=$(echo $queenrange | cut -f2 -d' ')
-
-[ -n "$queenrange_start" ] 
-[ -n "$queenrange_end" ] 
-
-## setup gateway IPv4
-# determine gw IP from p2ptable
-getoct () {
-	case $1 in
-		free |\
-		ghost|\
-		queen)
-			p2ptbl show $gwiptbl \
-			| cut -f1,2 \
-			| egrep "[0-9]*"$'\t'"$1" \
-			| awk -v Frst=$queenrange_start -v Last=$queenrange_end ' $1 >= Frst && $1 <= Last ' \
-			| $2 \
-			| head -n1 \
-			| cut -f1
-		;;
-		owned)
-			p2ptbl show $gwiptbl \
-			| grep "$NodeId" \
-			| cut -f1,2 \
-			| awk -v Frst=$queenrange_start -v Last=$queenrange_end ' $1 >= Frst && $1 <= Last ' \
-			| $2 \
-			| head -n1 \
-			| cut -f1
-			;;
-		*)
-		exit 1
-	esac
-}
-# get our old IP if possible
-# if we had an IP in the past, log that we use it ;)
-oct3=$(getoct owned "sort -n") && [ -n "$oct3" ] && logger -t fsm "Found old IP, re-using it"
-# get the lowest free addr if we dont previously owned a IP
-[ -z "$oct3" ] && oct3=$(getoct free "sort -n") && [ -n "$oct3" ] && logger -t fsm "Using free IP"
-# no free addrs? -> steal an addr from a random ghost
-[ -z "$oct3" ] && oct3=$(getoct ghost "shuf") && [ -n "$oct3" ] && logger -t fsm "Warning! No free IP's left. Got an IP from a ghost!"
-# no ghost addrs? -> steal an addr from a random queen
-[ -z "$oct3" ] && oct3=$(getoct queen "shuf") && [ -n "$oct3" ] && logger -t fsm "Warning! Address space exhaustion! Stealing IP from random Queen!"
-# Bail out if $oct3 is invalid
+# try to get a valid oct3 or fail
+oct3=$(getoct3)
 [ -n "$oct3" ]
-net_mesh=$(uci get network.$interface.net_mesh)
+
+# Get IPv4 mesh IP range or fail
+net_mesh=$(get_fsmsetting net_mesh)
+[ -n "$net_mesh" ]
+
+# Get real interface name
+real_iface=$(get_iface)
+
+#Calculate IP and DHCP range
 gwip=$(      ipcalc.sh $net_mesh $(($oct3 * 256 + 1))   1 | grep ^START | cut -f2 -d=)
 dhcp_start=$(ipcalc.sh $net_mesh $(($oct3 * 256 + 2))   1 | grep ^START | cut -f2 -d=)
 dhcp_end=$(  ipcalc.sh $net_mesh $(($oct3 * 256 + 254)) 1 | grep ^START | cut -f2 -d=)
-real_iface=$(get_iface)
-p2ptbl update $gwiptbl $oct3 "queen\t$NodeId" $(get_iface)
+
+#Update p2p table that we are now a queen
+p2ptbl update $gwiptbl $oct3 "queen\t$NodeId" $real_iface
 
 # activate gw mode
-batctl -m $(uci get network.$interface.batman_iface) gw server
+batctl -m $(get_fsmsetting batman_iface) gw server
 
 # set up gw IP
 mesh_add_ipv4 $gwip 255.255.0.0
 
 ## setup DHCP
 mesh_set_dhcp $dhcp_start $dhcp_end 255.255.0.0
-/etc/init.d/dnsmasq restart
 
 # fill splash table
 splash_sync
 
-# redirect tcp to local httpd, dns to local ns
-iptables -t nat -F prerouting_inet_unsplashed
-iptables -t nat -A prerouting_inet_unsplashed -i $real_iface -p tcp --dport 80 -j DNAT --to $gwip:81
-iptables -t nat -A prerouting_inet_unsplashed -i $real_iface -p udp --dport 53 -j DNAT --to $gwip:53
-
-# Always allow traffic to freifunk-rheinland web server, freifunk-rheinland image server and openwrt.org
-iptables -t nat -I prerouting_inet_unsplashed -d 78.47.165.13 -j ACCEPT
-iptables -t nat -I prerouting_inet_unsplashed -d 5.9.112.157 -j ACCEPT
-iptables -t nat -I prerouting_inet_unsplashed -d 78.24.191.177 -j ACCEPT
-iptables -t nat -I prerouting_inet_unsplashed -d 144.76.72.180 -j ACCEPT
-# TODO: discard any other UDP traffic
-
+#Configure splash according to configuration
+setsplash $gwip
