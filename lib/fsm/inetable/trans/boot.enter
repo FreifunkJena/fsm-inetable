@@ -1,6 +1,6 @@
 #!/bin/sh -e
-logger -t fsm boot.enter
 . ../common.sh
+logmessage "Running script: $0"
 
 # Create counter file
 echo "0" > /tmp/boot_runs_$interface

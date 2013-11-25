@@ -1,3 +1,5 @@
 #!/bin/sh -e
-logger -t fsm ghost.enter
-date +%s > /tmp/ghost_since_$3
+. ../common.sh
+logmessage "Running script: $0"
+
+date +%s > /tmp/ghost_since_$interface

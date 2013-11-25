@@ -1,4 +1,5 @@
-#!/bin/sh
-logger -t fsm default.enter
+#!/bin/sh -e
 . ../common.sh
-batctl -m $(uci get network.$interface.batman_iface) gw client
+logmessage "Running script: $0"
+
+batctl -m $(get_fsmsetting batman_iface) gw client

@@ -1,3 +1,5 @@
 #!/bin/sh -e
-logger -t fsm init.leave
+. ../common.sh
 #Nothing to do here ;)
+logmessage "Running script: $0"
+
