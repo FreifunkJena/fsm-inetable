@@ -1,6 +1,8 @@
-#!/bin/sh
-logger -t fsm drone.leave
+#!/bin/sh -e
 . ../common.sh
+logmessage "Running script: $0"
 
-logger -t fsm "Releasing IPv4 address.."
-ifdown $(uci -q get network.$interface.meshwan_iface
+logmessage "Releasing IPv4 address.."
+
+ifdown $(get_fsmsetting meshwan_iponly_iface) || true
+ifdown $(get_fsmsetting meshwan_iface)|| true

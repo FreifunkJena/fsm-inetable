@@ -1,7 +1,22 @@
-#!/bin/sh
-logger -t fsm drone.enter
+#!/bin/sh -e
 . ../common.sh
-batctl -m $(uci get network.$interface.batman_iface) gw client
+logmessage "Running script: $0"
 
-logger -t fsm "Getting IPv4 address from a queen.."
-ifup $(uci -q get network.$interface.meshwan_iface)
+batctl -m $(get_fsmsetting batman_iface) gw client
+
+#Check if we have a working internet connection
+#In that case we could create a routing loop when replacing the default route.
+#We will only pull an IP address in that case.
+
+if test_connectivity $interface internet; then
+	meshwan_iponly_iface=$(get_fsmsetting meshwan_iponly_iface)
+	[ -n meshwan_iponly_iface ]
+	logmessage "Found working internet connection while in forced mode. Pulling no Gateway or DNS from DHCP"
+	logmessage "Starting virtual mesh wan interface [$meshwan_iponly_iface]."
+	ifup $meshwan_iponly_iface
+else
+	meshwan_iface=$(get_fsmsetting meshwan_iface)
+	[ -n meshwan_iface ]
+	logmessage "Starting virtual mesh wan interface[$meshwan_iface]."
+	ifup $meshwan_iface
+fi
