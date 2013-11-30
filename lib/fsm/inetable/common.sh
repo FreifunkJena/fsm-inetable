@@ -4,8 +4,8 @@ SN=$2
 interface=$3
 [ -n $interface ] 
 
-gwiptbl=/var/p2ptbl/$interface/gwip
-logfile=/tmp/fsm-inetable-$interface.log
+gwiptbl="/var/p2ptbl/$interface/gwip"
+logfile="/tmp/fsm-inetable-$interface.log"
 NodeId="$(cat /etc/nodeid)"
 
 get_fsmsetting () {
@@ -13,9 +13,9 @@ get_fsmsetting () {
 	#First look in the setting cache as its not as expensive as uci
 	#and we want to avoid race conditions by changing settings.
 	if [ -s /var/inetable/$interface/$setting-cached ]; then
-		value="$(cat /var/inetable/$interface/$setting-cached"
+		value="$(cat /var/inetable/$interface/$setting-cached)"
 	else
-		value=$(uci -q fsm.$interface.$setting)
+		value=$(uci -q get fsm.$interface.$setting)
 		[ -n "$value" ] && echo "$value" > /var/inetable/$interface/$setting-cached
 	fi
 	echo $value
@@ -23,7 +23,7 @@ get_fsmsetting () {
 
 logmessage() {
 	local timestamp=$(date +"%Y-%m-%d %H:%M:%S")
-	if [ -f "$logfile" -a "$(ls -l $logfile | awk '{print $5}')" -ge 100000 ]; then
+	if [ "$(ls -l $logfile | awk '{print $5}')" -ge 100000 ]; then
 		logger -t fsm-inetable "[$interface]: Logfile of 100kb limit reached. Rotating log"
 		echo "$timestamp - fsm-inetable [$interface]: Logfile of 100kb limit reached. Rotating log" 1>> "$logfile"
 		[ -f "$logfile.1.gz" ] && rm -f "$logfile.1.gz"
@@ -103,19 +103,16 @@ mesh_add_ipv6 () {
 }
 
 call_changescript () { 
+	local command=$1
 	local ip6addr=$2
 	local ip6netmask=$3
 	local ipaddr=$4
 	local netmask=$5
-    echo "/lib/netifd/fsm.script" | (
+    (
 		exec 2>/tmp/fsm.script.log-"$interface"
 		set -x
 		logmessage "Calling IP change script with parameters: $ip6addr $ip6netmask $ipaddr $netmask"
-		while read cmd; do
-			if [ -x "$cmd" ]; then
-				$cmd $1 $interface $ip6addr $ip6netmask $ipaddr $netmask  666<&-
-				exit $?
-			fi
-		done
+		/lib/netifd/fsm.script $command $interface $ip6addr $ip6netmask $ipaddr $netmask  666<&-
+		exit $?
 	)
 }
