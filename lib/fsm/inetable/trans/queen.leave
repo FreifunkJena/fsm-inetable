@@ -22,7 +22,7 @@ mesh_remove_dhcp
 /etc/init.d/dnsmasq restart
 
 # TODO remove splash iptable
-iptables -t nat -F prerouting_inet_splashed_$interface
-iptables -t nat -F prerouting_inet_unsplashed_$interface
+iptables -t nat -F inet_splashed_$interface
+iptables -t nat -F inet_unsplashed_$interface
 
 
