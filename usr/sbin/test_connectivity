@@ -71,14 +71,14 @@ case "$testmode" in
 	mesh_iface=$(get_iface $interface)
 	meshvpn_iface=$(uci -q get fsm.$interface.meshvpn_iface)
 	testhosts_hybrid=$(uci -q get fsm.$interface.testhosts_hybrid)
-	[ -n "$testhosts_gwdhcp" ] || fail "No vpn gwdhcp test hosts defined"
-	iftest $meshvpn_iface && iftest $mesh_iface && pingtest "$testhosts_gwdhcp" $mesh_iface
+	[ -n "$testhosts_hybrid" ] || fail "No hybrid VPN test hosts defined"
+	iftest $meshvpn_iface && iftest $mesh_iface && pingtest "$testhosts_hybrid" $mesh_iface
 	;;
 	vpn-bridge)
 	bat_iface=$(uci -q get fsm.$interface.batman_iface)
 	meshvpn_iface=$(uci -q get fsm.$interface.meshvpn_iface)
 	testhosts_bridge=$(uci -q get fsm.$interface.testhosts_bridge)
-	[ -n "$testhosts_bridge" ] || fail "No vpn bridge test hosts defined"
+	[ -n "$testhosts_bridge" ] || fail "No bridge VPN test hosts defined"
 	iftest $meshvpn_iface && iftest $bat_iface && batpingtest "$testhosts_bridge" $bat_iface
 	;;
     *)
