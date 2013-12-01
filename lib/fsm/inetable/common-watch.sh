@@ -69,7 +69,7 @@ test_queenmode () {
 		*)
 			#We cannot be sure if we are in a state where we can test
 			#the connection properly so we go into testing state
-			logmessage "Queen state function called from unknown or default watcher script, entering connectiong testing mode"
+			logmessage "Queen state function called from unknown or default watcher script ($watcher), entering connectiong testing mode"
 			echo testing
 		;;
 	esac
