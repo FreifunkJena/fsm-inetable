@@ -11,7 +11,7 @@ batctl -m $(get_fsmsetting batman_iface) gw client
 if test_connectivity $interface internet; then
 	meshwan_iponly_iface=$(get_fsmsetting meshwan_iponly_iface)
 	[ -n meshwan_iponly_iface ]
-	logmessage "Found working internet connection while in forced mode. Pulling no Gateway or DNS from DHCP"
+	logmessage "Found working internet connection. Pulling no Gateway or DNS from DHCP-Server"
 	logmessage "Starting virtual mesh wan interface [$meshwan_iponly_iface]."
 	ifup $meshwan_iponly_iface
 else
