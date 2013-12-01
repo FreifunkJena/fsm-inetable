@@ -2,5 +2,5 @@
 . ../common.sh
 logmessage "Running script: $0"
 
-logmessage "Releasing IPv4 address from \"DHCP Remote Gateway\" connection test"
+logmessage "Releasing IPv4 address from \"Hybrid VPN\" connection test"
 ifdown $(get_fsmsetting meshwan_iponly_iface) || true

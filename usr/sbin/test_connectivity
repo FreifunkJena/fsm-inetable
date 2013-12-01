@@ -42,7 +42,7 @@ batpingtest () {
 
 printArgs () {
     fail "Usage:
-$0 uci-interface <internet|vpn-routed|vpn-gwdhcp|vpn-bridge>"
+$0 uci-interface <internet|vpn-routed|vpn-hybrid|vpn-bridge>"
 }
 
 fail() {
@@ -67,10 +67,10 @@ case "$testmode" in
 	[ -n "$testhosts_inet" ] || fail "No internet test hosts defined"
 	iftest $vpn_iface && pingtest "$testhosts_inet" $vpn_iface
 	;;
-    vpn-gwdhcp)
+    vpn-hybrid)
 	mesh_iface=$(get_iface $interface)
 	meshvpn_iface=$(uci -q get fsm.$interface.meshvpn_iface)
-	testhosts_gwdhcp=$(uci -q get fsm.$interface.testhosts_gwdhcp)
+	testhosts_hybrid=$(uci -q get fsm.$interface.testhosts_hybrid)
 	[ -n "$testhosts_gwdhcp" ] || fail "No vpn gwdhcp test hosts defined"
 	iftest $meshvpn_iface && iftest $mesh_iface && pingtest "$testhosts_gwdhcp" $mesh_iface
 	;;

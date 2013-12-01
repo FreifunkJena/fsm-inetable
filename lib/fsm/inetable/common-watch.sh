@@ -11,7 +11,7 @@ test_queenmode () {
 	case $watcher in
 		queen |\
 		queen-vpn-routed |\
-		queen-vpn-gwdhcp |\
+		queen-vpn-hybrid |\
 		ghost)
 			logmessage "Running connection test for queen mode: $net_queenmode"
 			if test_connectivity $interface $net_queenmode; then 
@@ -20,12 +20,12 @@ test_queenmode () {
 						logmessage "Connection test OK -> Routed VPN Queen State"
 						echo queen-vpn-routed
 					;;
-					vpn-gwdhcp)
-						logmessage "Connection test OK -> DHCP Remote Gateway Queen State"
-						echo queen-vpn-gwdhcp
+					vpn-hybrid)
+						logmessage "Connection test OK -> Hybrid VPN Queen State"
+						echo queen-vpn-hybrid
 					;;
 					vpn-bridge)
-						logmessage "Connection test OK -> VPN Queen State"
+						logmessage "Connection test OK -> Bridge VPN Queen State"
 						echo queen-vpn-bridge
 					;;
 				esac
@@ -46,12 +46,12 @@ test_queenmode () {
 						logmessage "Connection test OK -> Routed VPN Queen State"
 						echo queen-vpn-routed
 					;;
-					vpn-gwdhcp)
-						logmessage "Connection test OK -> DHCP Remote Gateway Queen State"
-						echo queen-vpn-gwdhcp
+					vpn-hybrid)
+						logmessage "Connection test OK -> Hybrid VPN Queen State"
+						echo queen-vpn-hybrid
 					;;
 					vpn-bridge)
-						logmessage "Connection test OK -> VPN Queen State"
+						logmessage "Connection test OK -> Bridge VPN Queen State"
 						echo queen-vpn-bridge
 					;;
 				esac
@@ -87,7 +87,7 @@ return_queenstate () {
 			echo queen
 		;;
 		vpn-routed |\
-		vpn-gwdhcp |\
+		vpn-hybrid |\
 		vpn-bridge)
 			local return_state=$(test_queenmode $net_queenmode)
 			echo $return_state
