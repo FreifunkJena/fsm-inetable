@@ -5,10 +5,10 @@ interface=$3
 [ -n $interface ] 
 
 getentry () {
-	local queenrange_start=$(get_fsmsetting queenrange_start)
-	local queenrange_end=$(get_fsmsetting queenrange_end)
-	[ -n "$queenrange_start" ] 
-	[ -n "$queenrange_end" ] 
+	local net_queenrange_start=$(get_fsmsetting net_queenrange_start)
+	local net_queenrange_end=$(get_fsmsetting net_queenrange_end)
+	[ -n "$net_queenrange_start" ] 
+	[ -n "$net_queenrange_end" ] 
 	case $1 in
 		free |\
 		ghost|\
@@ -16,7 +16,7 @@ getentry () {
 			p2ptbl show $gwiptbl \
 			| cut -f1,2 \
 			| egrep "[0-9]*"$'\t'"$1" \
-			| awk -v Frst=$queenrange_start -v Last=$queenrange_end ' $1 >= Frst && $1 <= Last ' \
+			| awk -v Frst=$net_queenrange_start -v Last=$net_queenrange_end ' $1 >= Frst && $1 <= Last ' \
 			| $2 \
 			| head -n1 \
 			| cut -f1
@@ -25,7 +25,7 @@ getentry () {
 			p2ptbl show $gwiptbl \
 			| grep "$NodeId" \
 			| cut -f1,2 \
-			| awk -v Frst=$queenrange_start -v Last=$queenrange_end ' $1 >= Frst && $1 <= Last ' \
+			| awk -v Frst=$net_queenrange_start -v Last=$net_queenrange_end ' $1 >= Frst && $1 <= Last ' \
 			| $2 \
 			| head -n1 \
 			| cut -f1
@@ -57,15 +57,15 @@ setsplash () {
 		local nosplash_clients=$(get_fsmsetting splash_except_clients)
 		logmessage "[Splash] Redirecting internet traffic on TCP Port 80 to $gwip:81"
 		logmessage "[Splash] Redirect DNS requests to $gwip:53"
-		iptables -t nat -F prerouting_inet_unsplashed_$interface
-		iptables -t nat -A prerouting_inet_unsplashed_$interface -i $real_iface -p tcp --dport 80 -j DNAT --to $gwip:81
-		iptables -t nat -A prerouting_inet_unsplashed_$interface -i $real_iface -p udp --dport 53 -j DNAT --to $gwip:53
+		iptables -t nat -F inet_unsplashed_$interface
+		iptables -t nat -A inet_unsplashed_$interface -i $real_iface -p tcp --dport 80 -j DNAT --to $gwip:81
+		iptables -t nat -A inet_unsplashed_$interface -i $real_iface -p udp --dport 53 -j DNAT --to $gwip:53
 		if [ -n "$nosplash_server" ]; then
 			logmessage "[Splash] Adding server splash exceptions:"
 			for host in $(echo $nosplash_server)
 			do
 				logmessage "[Splash] Never splashing traffic to $host"
-				iptables -t nat -I prerouting_inet_unsplashed_$interface -d $host -j ACCEPT
+				iptables -t nat -I inet_unsplashed_$interface -i $real_iface -d $host -j ACCEPT
 			done
 		fi
 		if [ -n "$nosplash_clients" ]; then
@@ -73,7 +73,7 @@ setsplash () {
 			for mac in $(echo $nosplash_client)
 			do
 				logmessage "[Splash] Never splashing client $host"
-				iptables -t nat -I prerouting_inet_unsplashed_$interface 1 -m mac --mac-source $mac -j ACCEPT
+				iptables -t nat -I inet_unsplashed_$interface 1 -m mac --mac-source $mac -j ACCEPT
 			done
 		fi
 	else

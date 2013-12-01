@@ -53,7 +53,9 @@ fail() {
 [ $# -lt 2 ] && printArgs
 
 case "$testmode" in
-    internet)
+    internet |\
+	routed |\
+	default)
 	wan_iface=$(get_iface wan)
 	testhosts_inet=$(uci -q get fsm.$interface.testhosts_inet)
 	[ -n "$testhosts_inet" ] || fail "No internet test hosts defined"

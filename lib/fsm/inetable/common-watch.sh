@@ -6,16 +6,16 @@ interface=$3
 
 test_queenmode () {
 	local watcher=$(basename $0)
-	local queenmode="$1"
+	local net_queenmode="$1"
 	local vpn_fallback=$(get_fsmsetting vpn_fallback)
 	case $watcher in
 		queen |\
 		queen-vpn-routed |\
 		queen-vpn-gwdhcp |\
 		ghost)
-			logmessage "Running connection test for queen mode: $queenmode"
-			if test_connectivity $interface $queenmode; then 
-				case $queenmode in
+			logmessage "Running connection test for queen mode: $net_queenmode"
+			if test_connectivity $interface $net_queenmode; then 
+				case $net_queenmode in
 					vpn-routed)
 						logmessage "Connection test OK -> Routed VPN Queen State"
 						echo queen-vpn-routed
@@ -40,8 +40,8 @@ test_queenmode () {
 		queen-vpn-bridge |\
 		drone |\
 		testing)
-			if test_connectivity $interface $queenmode; then 
-				case $queenmode in
+			if test_connectivity $interface $net_queenmode; then 
+				case $net_queenmode in
 					vpn-routed)
 						logmessage "Connection test OK -> Routed VPN Queen State"
 						echo queen-vpn-routed
@@ -77,10 +77,10 @@ test_queenmode () {
 }
 
 return_queenstate () {
-	local queenmode=$(get_fsmsetting queenmode)
-	[ -n "$queenmode" ] || queenmode="default"
-	logmessage "Queen-Mode set to: $queenmode"
-	case $queenmode in
+	local net_queenmode=$(get_fsmsetting net_queenmode)
+	[ -n "$net_queenmode" ] || net_queenmode="default"
+	logmessage "Queen-Mode set to: $net_queenmode"
+	case $net_queenmode in
 		routed |\
 		default)
 			logmessage "Using default queen mode -> Queen State"
@@ -89,11 +89,11 @@ return_queenstate () {
 		vpn-routed |\
 		vpn-gwdhcp |\
 		vpn-bridge)
-			local return_state=$(test_queenmode $queenmode)
+			local return_state=$(test_queenmode $net_queenmode)
 			echo $return_state
 		;;
 		*)
-			logmessage "Error: Invalid queen mode: $queenmode"
+			logmessage "Error: Invalid queen mode: $net_queenmode"
 			exit 1
 		;;
 	esac

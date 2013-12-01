@@ -5,7 +5,6 @@ logmessage "Running script: $0"
 batctl -m $(get_fsmsetting batman_iface) gw client
 
 #Get an IP so the watcher script can check the remote gateway availability
-meshwan_iface=$(get_fsmsetting meshwan_iponly_iface)
 logmessage "Pulling IPv4 only from DHCP-Server for \"DHCP Remote Gateway\" connection test."
-logmessage "Starting virtual mesh wan interface [$meshwan_iface]."
+ifup $(get_fsmsetting meshwan_iponly_iface) || true
 

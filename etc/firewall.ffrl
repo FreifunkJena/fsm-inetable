@@ -40,14 +40,14 @@ do
 	# create chains for the robinson fake net (depending on the inetable
 	# state, this is used to route all TCP traffic to a local web server
 	# or relay all traffic to the intended target):
-	iptables -t nat -N prerouting_robinson_inet_$interface
-	iptables -t nat -N prerouting_robinson_fake_$interface
+	iptables -t nat -N robinson_inet_$interface
+	iptables -t nat -N robinson_fake_$interface
 
 	## splash
 	# create chains executed for splashed/unsplashed users when trying to
 	# reach the internet
-	iptables -t nat -N prerouting_inet_splashed_$interface
-	iptables -t nat -N prerouting_inet_unsplashed_$interface
+	iptables -t nat -N inet_splashed_$interface
+	iptables -t nat -N inet_unsplashed_$interface
 
 	## robinson net
 	# - prerouting_robinson_fake: traffic destinated to the fake net
@@ -55,9 +55,9 @@ do
 	#   the robinson net
 	
 	iptables -t nat -A PREROUTING -i $mesh_iface   -d $net_fake \
-		-j prerouting_robinson_fake_$interface
+		-j robinson_fake_$interface
 	iptables -t nat -A PREROUTING -i $mesh_iface ! -d $net_robinson \
-		-j prerouting_robinson_inet_$interface
+		-j robinson_inet_$interface
 
 	# reject all packets to the robinson fake net that have not been
 	# catched by a nat rule in the preceeding chains
@@ -67,9 +67,9 @@ do
 	## splash
 	# Add interface to splash chains
 	iptables -t nat -A PREROUTING -s $net_mesh ! -d $net_mesh \
-			-j prerouting_inet_splashed_$interface
+			-j inet_splashed_$interface
 	iptables -t nat -A PREROUTING -s $net_mesh ! -d $net_mesh \
-			-j prerouting_inet_unsplashed_$interface
+			-j inet_unsplashed_$interface
 
 	# Don't route privat subnets over wan
 	iptables -I FORWARD -i $mesh_iface -o $wan_iface -d 192.168.0.0/16 -j DROP

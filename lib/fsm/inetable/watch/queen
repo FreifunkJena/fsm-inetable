@@ -1,6 +1,6 @@
-#!/bin/sh -e
+#!/bin/sh -ex
 . ../common.sh
-. ../common-watcher.sh
+. ../common-watch.sh
 
 #Check if our current Oct3 is valid
 CurrentOct3=$(current_oct3)
@@ -18,7 +18,7 @@ if ! we_own_our_ip; then
     exit
 fi
 
-if test_connectivity internet; then
+if test_connectivity $interface internet; then
 	logmessage "Internet connection available, checking queen mode"
 	return_state="$(return_queenstate)"
 	if [ -n "$return_state" ]; then

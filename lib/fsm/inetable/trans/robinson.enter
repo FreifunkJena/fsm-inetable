@@ -37,9 +37,9 @@ mesh_set_dhcp_fake $dhcp_start $dhcp_end 255.0.0.0 $fakeip
 batctl -m $(get_fsmsetting batman_iface) gw off
 
 # redirect all tcp traffic to local httpd, all dns traffic to local NS
-iptables -t nat -F prerouting_robinson_fake_$interface
-iptables -t nat -F prerouting_robinson_inet_$interface
-iptables -t nat -A prerouting_robinson_inet_$interface -i $real_iface -p tcp \
+iptables -t nat -F robinson_fake_$interface
+iptables -t nat -F robinson_inet_$interface
+iptables -t nat -A robinson_inet_$interface -i $real_iface -p tcp \
     -j DNAT --to-destination $randip:81
-iptables -t nat -A prerouting_robinson_inet_$interface -i $real_iface -p udp --dport 53 \
+iptables -t nat -A robinson_inet_$interface -i $real_iface -p udp --dport 53 \
     -j DNAT --to-destination $randip:53

@@ -11,8 +11,8 @@ mesh_remove_dhcp
 
 
 # stop redirecting all inet traffic to local httpd/nameserver
-iptables -t nat -F prerouting_robinson_inet_$interface
+iptables -t nat -F robinson_inet_$interface
 
 # TODO: now that we have internet, send all packets destined to the
 # fake net to the intended inet host; for now reject them
-iptables -t nat -F prerouting_robinson_fake_$interface
+iptables -t nat -F robinson_fake_$interface
