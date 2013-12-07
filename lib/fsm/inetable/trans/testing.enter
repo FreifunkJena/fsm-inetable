@@ -1,0 +1,10 @@
+#!/bin/sh -e
+. ../common.sh
+logmessage "Running script: $0"
+
+batctl -m $(get_fsmsetting batman_iface) gw client
+
+#Get an IP so the watcher script can check the remote gateway availability
+logmessage "Pulling IPv4 only from DHCP-Server for \"Hybrid VPN\" connection test."
+ifup $(get_fsmsetting meshwan_iponly_iface) || true
+

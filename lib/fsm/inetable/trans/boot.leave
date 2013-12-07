@@ -1,22 +1,21 @@
 #!/bin/sh -e
-logger -t fsm boot.leave
 . ../common.sh
+logmessage "Running script: $0"
 
-queenrange=$(uci -q get network.$interface.net_queenrange)
-queenrange_start=$(echo $queenrange | cut -f1 -d' ')
-queenrange_end=$(echo $queenrange | cut -f2 -d' ')
-
-# init gwid table by merging it with a hand-crafted table in which all
+# init gwip table by merging it with a hand-crafted table in which all
 # available IPs are stored as free with version zero. This guarantees
 # that any update on any node will have a higher version.
 # This only is the case when there has been no new 
 # table version received in the boot cycle.
-# Note: This is only the case if the gwip table is empty!
 if [ ! -s $gwiptbl ]; then
+	local queenrange_start=$(get_fsmsetting queenrange_start)
+	local queenrange_end=$(get_fsmsetting queenrange_end)
+	[ -n "$queenrange_start" ]
+	[ -n "$queenrange_end" ]
+	logmessage "Got no valid GWIP-Table from network, generating default one"
 	for i in $(seq $queenrange_start $queenrange_end); do
 		echo -e "$i\t0\tfree"
 	done > /tmp/gwip_init_$interface
 	p2ptbl merge $gwiptbl /tmp/gwip_init_$interface
 	rm /tmp/gwip_init_$interface
 fi
-

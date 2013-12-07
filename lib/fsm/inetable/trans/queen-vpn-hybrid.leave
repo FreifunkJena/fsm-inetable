@@ -6,15 +6,17 @@ logmessage "Running script: $0"
 CurrentOct3=$(current_oct3)
 [ -n "$CurrentOct3" ]
 
-# store since when we are a ghost
-date +%s >/tmp/ghost_since_$interface
-
 # do not announce gateway anymore
 batctl -m $(get_fsmsetting batman_iface) gw client
 
-# update status of our gateway ip
+# free gw IP
+mesh_del_ipv4
+
+# release IP in p2ptable (if we still own it)
 if we_own_our_ip; then
-    p2ptbl update $gwiptbl $CurrentOct3 "ghost\t$NodeId" $(get_iface)
+    p2ptbl update $gwiptbl $CurrentOct3 free $(get_iface)
 fi
 
-# TODO: setup redirection of all traffic to another gateway
+# disable DHCP
+mesh_remove_dhcp
+/etc/init.d/dnsmasq restart

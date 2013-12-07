@@ -1,5 +1,5 @@
 #!/bin/sh -e
-interfaces=$(uci get splash.settings.interfaces)
+interfaces=$(uci -q get splash.settings.interfaces)
 
 get_iface () {
 	local interface=$1
@@ -12,6 +12,9 @@ get_iface () {
 # Wan Interface
 wan_iface=$(get_iface wan)
 
+# Lan Interface
+lan_iface=$(get_iface lan)
+
 # flush PREROUTING chains; we catch all packets with the cases
 # detailed below
 iptables -t nat -F PREROUTING
@@ -19,32 +22,32 @@ iptables -t nat -F PREROUTING
 # Add masquerading for wan interface
 iptables -t nat -A postrouting_rule -o $wan_iface -j MASQUERADE
 
-# Add masquerading for br-mesh if packets come from lan
-iptables -t nat -A postrouting_rule -o br-mesh -s 192.168.210.0/24 -j MASQUERADE
-
-# Allow routing between mesh & lan (with NAT)
-iptables -I FORWARD -i br-mesh -o br-lan -j ACCEPT
-iptables -I FORWARD -i br-lan -o br-mesh -j ACCEPT
-iptables -I FORWARD -i br-mesh -o $wan_iface -j ACCEPT
-
-# create chains for the robinson fake net (depending on the inetable
-# state, this is used to route all TCP traffic to a local web server
-# or relay all traffic to the intended target):
-iptables -t nat -N prerouting_robinson_inet
-iptables -t nat -N prerouting_robinson_fake
-
-## splash
-# create chains executed for splashed/unsplashed users when trying to
-# reach the internet
-iptables -t nat -N prerouting_inet_splashed
-iptables -t nat -N prerouting_inet_unsplashed
-
 for interface in $interfaces
 do
-	net_robinson=$(uci get network.$interface.net_robinson)
-	net_fake=$(    uci get network.$interface.net_fake)
-	net_mesh=$(    uci get network.$interface.net_mesh)
+	net_robinson=$(uci get fsm.$interface.net_robinson)
+	net_fake=$(    uci get fsm.$interface.net_fake)
+	net_mesh=$(    uci get fsm.$interface.net_mesh)
 	mesh_iface=$(get_iface $interface)
+
+	# Add masquerading for br-mesh if packets come from lan
+	iptables -t nat -A postrouting_rule -o $mesh_iface -s 192.168.210.0/24 -j MASQUERADE
+
+	# Allow routing between mesh & lan (with NAT)
+	iptables -I FORWARD -i $mesh_iface -o $lan_iface -j ACCEPT
+	iptables -I FORWARD -i $lan_iface -o $mesh_iface -j ACCEPT
+	iptables -I FORWARD -i $mesh_iface -o $wan_iface -j ACCEPT
+
+	# create chains for the robinson fake net (depending on the inetable
+	# state, this is used to route all TCP traffic to a local web server
+	# or relay all traffic to the intended target):
+	iptables -t nat -N robinson_inet_$interface
+	iptables -t nat -N robinson_fake_$interface
+
+	## splash
+	# create chains executed for splashed/unsplashed users when trying to
+	# reach the internet
+	iptables -t nat -N inet_splashed_$interface
+	iptables -t nat -N inet_unsplashed_$interface
 
 	## robinson net
 	# - prerouting_robinson_fake: traffic destinated to the fake net
@@ -52,9 +55,9 @@ do
 	#   the robinson net
 	
 	iptables -t nat -A PREROUTING -i $mesh_iface   -d $net_fake \
-		-j prerouting_robinson_fake
+		-j robinson_fake_$interface
 	iptables -t nat -A PREROUTING -i $mesh_iface ! -d $net_robinson \
-		-j prerouting_robinson_inet
+		-j robinson_inet_$interface
 
 	# reject all packets to the robinson fake net that have not been
 	# catched by a nat rule in the preceeding chains
@@ -64,12 +67,12 @@ do
 	## splash
 	# Add interface to splash chains
 	iptables -t nat -A PREROUTING -s $net_mesh ! -d $net_mesh \
-			-j prerouting_inet_splashed
+			-j inet_splashed_$interface
 	iptables -t nat -A PREROUTING -s $net_mesh ! -d $net_mesh \
-			-j prerouting_inet_unsplashed
+			-j inet_unsplashed_$interface
 
-	# Don't route privat subnets 
-	iptables -I FORWARD -i $mesh_iface -d 192.168.0.0/16 -j DROP
-	iptables -I FORWARD -i $mesh_iface -d 172.16.0.0/12 -j DROP
-	iptables -I FORWARD -i $mesh_iface -d 10.0.0.0/8 -j DROP
+	# Don't route privat subnets over wan
+	iptables -I FORWARD -i $mesh_iface -o $wan_iface -d 192.168.0.0/16 -j DROP
+	iptables -I FORWARD -i $mesh_iface -o $wan_iface -d 172.16.0.0/12 -j DROP
+	iptables -I FORWARD -i $mesh_iface -o $wan_iface -d 10.0.0.0/8 -j DROP
 done

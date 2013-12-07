@@ -1,0 +1,3 @@
+#!/bin/sh -e
+# Ghost/queen transitions scripts are currently identical to normal ones
+. ./ghost-queen.trans

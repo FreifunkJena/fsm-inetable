@@ -19,7 +19,15 @@ gwip=$(      ipcalc.sh $net_mesh $(($oct3 * 256 + 1))   1 | grep ^START | cut -f
 dhcp_start=$(ipcalc.sh $net_mesh $(($oct3 * 256 + 2))   1 | grep ^START | cut -f2 -d=)
 dhcp_end=$(  ipcalc.sh $net_mesh $(($oct3 * 256 + 254)) 1 | grep ^START | cut -f2 -d=)
 
-#Update p2p table that we are now a queen
+# Get gateways, if none is set bail out.
+net_gateways="$(get_fsmsetting net_gateways)"
+[ -n "$net_gateways" ]
+
+# Get DNS servers, if none is set we will use our own IP as DNS server.
+net_nameservers="$(get_fsmsetting net_nameservers)"
+[ -n "$net_nameservers" ] || net_nameservers=$gwip
+
+# Update p2p table that we are now a queen.
 p2ptbl update $gwiptbl $oct3 "queen\t$NodeId" $real_iface
 
 # activate gw mode
@@ -28,11 +36,9 @@ batctl -m $(get_fsmsetting batman_iface) gw server
 # set up gw IP
 mesh_add_ipv4 $gwip 255.255.0.0
 
+# We will now ping the gateways and get the one with the best ping, fail if no gateways are available
+gateway=$(get_bestgateway "$net_gateways")
+[ -n "$gateway" ]
+
 ## setup DHCP
-mesh_set_dhcp $dhcp_start $dhcp_end 255.255.0.0
-
-# fill splash table
-splash_sync
-
-#Configure splash according to configuration
-setsplash $gwip
+mesh_set_dhcp $dhcp_start $dhcp_end 255.255.0.0 $gateway "$net_nameservers"

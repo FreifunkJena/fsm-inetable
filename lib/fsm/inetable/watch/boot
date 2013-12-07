@@ -1,26 +1,17 @@
 #!/bin/sh -e
 . ../common.sh
+. ../common-watch.sh
 
-if [ -s $gwiptbl ] || [ "$(cat /tmp/boot_runs_$interface)" -ge 5 ]; then
-	if [ "$(get_forcestate)" == "drone" ]; then
-		logger -t fsm "Interface $interface: Forced into drone state by configuration"
-		echo drone
-	else
-		if test_connectivity internet; then
-			logger -t fsm "Interface $interface: Node is online"
-			echo queen
-		elif cloud_is_online; then
-			logger -t fsm "Interface $interface: Cloud is online"
-			echo drone
-		else
-			logger -t fsm "Interface $interface: Cloud is offline"
-			echo robinson
-		fi
-	fi
+if [ "$(get_forcestate)" == "drone" ]; then
+	logmessage "Forced into Drone State by configuration"
+	echo drone
+elif [ -s $gwiptbl ] || [ "$(cat /tmp/boot_runs_$interface)" -ge 5 ]; then
+	logmessage "Entering connection testing mode"
+	echo testing
 else
 	boot_runs="$(cat /tmp/boot_runs_$interface)"
 	boot_runs_new=`expr $boot_runs + 1`
 	echo $boot_runs_new > /tmp/boot_runs_$interface
-	logger -t fsm "Interface $interface: Waiting for network data"
+	logmessage "Waiting for p2p table data"
 	echo boot
 fi

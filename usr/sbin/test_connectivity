@@ -1,4 +1,8 @@
 #!/bin/sh
+# Meant to be called by fsm
+interface=$1
+testmode=$2
+PingTrials=5
 
 get_iface () {
 	local interface=$1
@@ -8,38 +12,77 @@ get_iface () {
 	echo $iface
 }
 
-TestHosts="8.8.8.8 4.2.2.4 78.47.165.13 78.47.11.70"
-PingTrials=5
-IFace=$(get_iface wan)
-
 iftest () {
     ifconfig $1 2>/dev/null | grep -q RUNNING
 }
 
 pingtest () {
+	testhosts=$1
+	iface=$2
     # TODO: replace with something parallel
     for i in $(seq 1 $PingTrials); do
-	for h in $(echo $TestHosts); do
-	    ping -c 1 -w 10 -I $1  $h &>/dev/null
-	    if [ $? -eq 0 ]; then
-		exit 0;	
-	    fi
+		for h in $(echo $testhosts); do
+			ping -c 1 -w 10 -I $iface  $h &>/dev/null
+			[ $? -eq 0 ] && exit 0
+		done
 	done
-    done
 }
 
-case "$1" in
-    internet)
-	iftest $IFace && pingtest $IFace
+batpingtest () {
+	testhosts=$1
+	batiface=$2
+    # TODO: replace with something parallel
+    for i in $(seq 1 $PingTrials); do
+		for h in $(echo $testhosts); do
+			batctl -m $batiface ping "$h" -c 1 &>/dev/null
+			[ $? -eq 0 ] && exit 0
+		done
+	done
+}
+
+printArgs () {
+    fail "Usage:
+$0 uci-interface <internet|vpn-routed|vpn-hybrid|vpn-bridge>"
+}
+
+fail() {
+    echo "$1" 1>&2
+    exit 1
+}
+
+[ $# -lt 2 ] && printArgs
+
+case "$testmode" in
+    internet |\
+	routed |\
+	default)
+	wan_iface=$(get_iface wan)
+	testhosts_inet=$(uci -q get fsm.$interface.testhosts_inet)
+	[ -n "$testhosts_inet" ] || fail "No internet test hosts defined"
+	iftest $wan_iface && pingtest "$testhosts_inet" $wan_iface
 	;;
-    vpn)
-	IFace=tun0
-	iftest $IFace && pingtest $IFace
+	vpn-routed)
+	vpn_iface=$(uci -q get fsm.$interface.routedvpn_iface)
+	testhosts_inet=$(uci -q get fsm.$interface.testhosts_inet)
+	[ -n "$testhosts_inet" ] || fail "No internet test hosts defined"
+	iftest $vpn_iface && pingtest "$testhosts_inet" $vpn_iface
+	;;
+    vpn-hybrid)
+	mesh_iface=$(get_iface $interface)
+	meshvpn_iface=$(uci -q get fsm.$interface.meshvpn_iface)
+	testhosts_hybrid=$(uci -q get fsm.$interface.testhosts_hybrid)
+	[ -n "$testhosts_hybrid" ] || fail "No hybrid VPN test hosts defined"
+	iftest $meshvpn_iface && iftest $mesh_iface && pingtest "$testhosts_hybrid" $mesh_iface
+	;;
+	vpn-bridge)
+	bat_iface=$(uci -q get fsm.$interface.batman_iface)
+	meshvpn_iface=$(uci -q get fsm.$interface.meshvpn_iface)
+	testhosts_bridge=$(uci -q get fsm.$interface.testhosts_bridge)
+	[ -n "$testhosts_bridge" ] || fail "No bridge VPN test hosts defined"
+	iftest $meshvpn_iface && iftest $bat_iface && batpingtest "$testhosts_bridge" $bat_iface
 	;;
     *)
-	echo "Usage:
-$0 <internet|vpn>" >&2
-	exit 1
+	printArgs
 	;;
 esac
 
