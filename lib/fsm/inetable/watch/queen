@@ -2,6 +2,8 @@
 . ../common.sh
 . ../common-watch.sh
 
+DHCPLeaseTime=$(get_fsmsetting net_dhcpleasetime)
+
 #Check if our current Oct3 is valid
 CurrentOct3=$(current_oct3)
 [ -n "$CurrentOct3" ]
