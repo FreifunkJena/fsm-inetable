@@ -1,5 +1,6 @@
 #!/bin/sh -e
 . ../common.sh
+. ../common-queen.sh
 logmessage "Running script: $0"
 
 #Remove IPv4 Addr

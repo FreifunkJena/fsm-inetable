@@ -37,6 +37,45 @@ test_queenmode () {
 				logmessage "Connection test failed & fallback disabled -> Becoming a ghost (Boooo!)"
 			fi
 		;;
+		robinson)
+			case $net_queenmode in
+				vpn-hybrid)
+					if cloud_is_online; then
+						logmessage "Found gateways, changing to testing mode"
+						echo testing
+					elif [ "$vpn_fallback" == "true" ]; then
+						logmessage "No gateways found & fallback enabled -> Queen State"
+						echo queen
+					else
+						logmessage "Connection test failed & no gateways found -> Robinson State"
+						echo robinson
+					fi
+				;;
+				*)
+					if test_connectivity $interface $net_queenmode; then 
+						case $net_queenmode in
+						vpn-routed)
+							logmessage "Connection test OK -> Routed VPN Queen State"
+							echo queen-vpn-routed
+						;;
+						vpn-bridge)
+							logmessage "Connection test OK -> Bridge VPN Queen State"
+							echo queen-vpn-bridge
+						;;
+						esac
+					elif [ "$vpn_fallback" == "true" ]; then
+						logmessage "Connection test failed & fallback enabled -> Queen State"
+						echo queen
+					elif cloud_is_online; then
+						logmessage "Connection test failed & cloud has gateways -> Drone State"
+						echo drone
+					else
+						logmessage "Connection test failed & no gateways found -> Robinson State"
+						echo robinson
+					fi
+				;;
+			esac
+		;;
 		queen-vpn-bridge |\
 		drone |\
 		testing)
