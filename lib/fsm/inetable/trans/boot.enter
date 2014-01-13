@@ -8,5 +8,8 @@ echo "0" > /tmp/boot_runs_$interface
 # Set interface defaults
 mesh_add_ipv6
 
+# Accept IPv6 routing advertisements even if forwarding is on 
+echo "2" > /proc/sys/net/ipv6/conf/$(get_iface)/accept_ra
+
 # Restarting HBBP to make sure it runs correctly
 /etc/init.d/hbbp restart
