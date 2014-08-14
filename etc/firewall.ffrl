@@ -22,6 +22,10 @@ iptables -t nat -F PREROUTING
 # Add masquerading for wan interface
 iptables -t nat -A postrouting_rule -o $wan_iface -j MASQUERADE
 
+# close port 53 on wan interface
+iptables -A INPUT -i $wan_iface -p tcp --destination-port 53 -j DROP
+iptables -A INPUT -i $wan_iface -p udp --destination-port 53 -j DROP
+
 for interface in $interfaces
 do
 	net_robinson=$(uci get fsm.$interface.net_robinson)
