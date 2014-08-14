@@ -40,6 +40,7 @@ do
 	iptables -I FORWARD -i $mesh_iface -o $lan_iface -j ACCEPT
 	iptables -I FORWARD -i $lan_iface -o $mesh_iface -j ACCEPT
 	iptables -I FORWARD -i $mesh_iface -o $wan_iface -j ACCEPT
+	iptables -I FORWARD -i $lan_iface -o $wan_iface -j ACCEPT
 
 	# create chains for the robinson fake net (depending on the inetable
 	# state, this is used to route all TCP traffic to a local web server
