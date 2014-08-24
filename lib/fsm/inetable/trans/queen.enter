@@ -9,6 +9,12 @@ queenrange_end=$(echo $queenrange | cut -f2 -d' ')
 [ -n "$queenrange_start" ] 
 [ -n "$queenrange_end" ] 
 
+## start exit vpn if /etc/openvpn/exitvpn.conf exists
+if [ -e /etc/openvpn/exitvpn.conf ]
+    then /usr/sbin/openvpn --syslog openvpn[exitvpn] --writepid /var/run/openvpn-exitvpn.pid --config /etc/openvpn/exitvpn.conf --daemon
+fi
+
+
 ## setup gateway IPv4
 # determine gw IP from p2ptable
 getoct () {
