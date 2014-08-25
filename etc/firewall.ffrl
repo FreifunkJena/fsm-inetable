@@ -33,6 +33,13 @@ do
 	net_mesh=$(    uci get fsm.$interface.net_mesh)
 	mesh_iface=$(get_iface $interface)
 
+	#exitvpn
+	iptables -I FORWARD -i $mesh_iface  -o tunff -j ACCEPT
+	iptables -I FORWARD -i tunff -o $mesh_iface -j ACCEPT
+	iptables -t nat -A POSTROUTING -o tunff -j MASQUERADE
+	iptables -A INPUT -i tunff -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+	iptables -A INPUT -i tunff -j REJECT
+
 	# Add masquerading for br-mesh if packets come from lan
 	iptables -t nat -A postrouting_rule -o $mesh_iface -s 192.168.210.0/24 -j MASQUERADE
 
