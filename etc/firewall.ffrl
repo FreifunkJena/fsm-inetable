@@ -78,6 +78,7 @@ do
 
 	## splash
 	# Add interface to splash chains
+	iptables -t nat -N splash_db_1_meshfsm
 	iptables -t nat -A PREROUTING -s $net_mesh ! -d $net_mesh \
 			-j inet_splashed_$interface
 	iptables -t nat -A PREROUTING -s $net_mesh ! -d $net_mesh \
