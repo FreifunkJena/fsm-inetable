@@ -13,22 +13,10 @@ getentry () {
 		free |\
 		ghost|\
 		queen)
-			p2ptbl show $gwiptbl \
-			| cut -f1,2 \
-			| egrep "[0-9]*"$'\t'"$1" \
-			| awk -v Frst=$net_queenrange_start -v Last=$net_queenrange_end ' $1 >= Frst && $1 <= Last ' \
-			| $2 \
-			| head -n1 \
-			| cut -f1
+			alfred -r 65 | grep -oE "\b([0-9]{1,3}\.){3}[0-9]{1,3}\b" | sort -n > /tmp/gwip; for x in $(seq 0 126);do y=$(grep "10.17.$x.1" /tmp/gwip); if test -z "$y"; then echo $x; fi; done | head -1; rm /tmp/gwip
 		;;
 		owned)
-			p2ptbl show $gwiptbl \
-			| grep "$NodeId" \
-			| cut -f1,2 \
-			| awk -v Frst=$net_queenrange_start -v Last=$net_queenrange_end ' $1 >= Frst && $1 <= Last ' \
-			| $2 \
-			| head -n1 \
-			| cut -f1
+			alfred -r 65 | grep -i "$(cat /sys/class/net/eth0/address)" | grep -oE "\b([0-9]{1,3}\.){3}[0-9]{1,3}\b" |cut -f3 -d.
 			;;
 		*)
 		exit 1
